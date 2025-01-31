@@ -1,0 +1,198 @@
+Parameters:
+  EnvType:
+    Description: Environment type.
+    Default: test
+    Type: String
+    AllowedValues: [jenkins, prometheus, grafana, test]
+    ConstraintDescription: must specify jenkins, prometheus, grafana, or test.
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: main-vpc
+
+  MyInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: main-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref MyInternetGateway
+
+  MyRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: main-route-table
+
+  MyRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MyRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyInternetGateway
+
+  MySubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: ap-southeast-3a
+      Tags:
+        - Key: Name
+          Value: main-subnet
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref MySubnet
+      RouteTableId: !Ref MyRouteTable
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow internal communication and SSH"
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # SSH
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0  # HTTP
+        - IpProtocol: tcp
+          FromPort: 9000
+          ToPort: 9000
+          CidrIp: 0.0.0.0/0  # Nginx
+        - IpProtocol: tcp
+          FromPort: 3031
+          ToPort: 3031
+          CidrIp: 0.0.0.0/0  # Grafana
+        - IpProtocol: tcp
+          FromPort: 9091
+          ToPort: 9091
+          CidrIp: 0.0.0.0/0  # Prometheus
+        - IpProtocol: tcp
+          FromPort: 49000
+          ToPort: 49000
+          CidrIp: 0.0.0.0/0  # Jenkins
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  # Jenkins Instance
+  JenkinsInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: ap-southeast-3a
+      KeyName: sample-key-pair-firman
+      ImageId: ami-01d23da707abb0f2f
+      InstanceType: t3.micro
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      SubnetId: !Ref MySubnet
+      Tags:
+        - Key: Name
+          Value: Jenkins
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt update -y
+          sudo apt install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo usermod -aG docker $USER
+
+  # Prometheus Instance
+  PrometheusInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: ap-southeast-3a
+      KeyName: sample-key-pair-firman
+      ImageId: ami-01d23da707abb0f2f
+      InstanceType: t3.micro
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      SubnetId: !Ref MySubnet
+      Tags:
+        - Key: Name
+          Value: Prometheus
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt update -y
+          sudo apt install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo usermod -aG docker $USER
+
+  # Grafana Instance
+  GrafanaInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: ap-southeast-3a
+      KeyName: sample-key-pair-firman
+      ImageId: ami-01d23da707abb0f2f
+      InstanceType: t3.micro
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      SubnetId: !Ref MySubnet
+      Tags:
+        - Key: Name
+          Value: Grafana
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt update -y
+          sudo apt install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo usermod -aG docker $USER
+
+  # Test Instance (no Docker)
+  TestInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: ap-southeast-3a
+      KeyName: sample-key-pair-firman
+      ImageId: ami-01d23da707abb0f2f
+      InstanceType: t3.micro
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      SubnetId: !Ref MySubnet
+      Tags:
+        - Key: Name
+          Value: Test
+
+Outputs:
+  JenkinsPublicIP:
+    Description: "Public IP of Jenkins Instance"
+    Value: !GetAtt JenkinsInstance.PublicIp
+    
+  PrometheusPublicIP:
+    Description: "Public IP of Prometheus Instance"
+    Value: !GetAtt PrometheusInstance.PublicIp
+
+  GrafanaPublicIP:
+    Description: "Public IP of Grafana Instance"
+    Value: !GetAtt GrafanaInstance.PublicIp
+
+  TestPublicIP:
+    Description: "Public IP of Test Instance"
+    Value: !GetAtt TestInstance.PublicIp
