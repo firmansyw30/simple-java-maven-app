@@ -38,7 +38,7 @@ node {
         }
 
     } catch (err) {
-        echo "Pipeline gagal: ${err}"
+        echo "Pipeline gagal karena: ${err}"
         currentBuild.result = 'FAILURE'
     }
 }
