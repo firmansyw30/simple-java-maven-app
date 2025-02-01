@@ -1,6 +1,11 @@
 node {
     try {
+        stage('Checkout') {
+            checkout scm
+        }
+
         stage('Build') {
+            sh 'ls -la'  // Debugging: cek apakah pom.xml ada di root folder
             sh 'mvn -B -DskipTests clean package'
         }
 
