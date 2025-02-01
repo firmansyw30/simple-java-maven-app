@@ -1,5 +1,9 @@
 node {
     try {
+        stage('Clean Workspace') {
+            deleteDir()
+        }
+        
         stage('Build') {
             sh 'mvn -B -DskipTests clean package'
         }
