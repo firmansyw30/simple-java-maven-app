@@ -1,11 +1,4 @@
-Parameters:
-  EnvType:
-    Description: Environment type.
-    Default: test
-    Type: String
-    AllowedValues: [jenkins, prometheus, grafana, test]
-    ConstraintDescription: must specify jenkins, prometheus, grafana, or test.
-
+AWSTemplateFormatVersion: '2010-09-09'
 Resources:
   MyVPC:
     Type: AWS::EC2::VPC
@@ -103,7 +96,7 @@ Resources:
       AvailabilityZone: ap-southeast-3a
       KeyName: sample-key-pair-firman
       ImageId: ami-01d23da707abb0f2f
-      InstanceType: t3.micro
+      InstanceType: t3.medium # change from t3.micro to t3.medium
       SecurityGroupIds:
         - !Ref MySecurityGroup
       SubnetId: !Ref MySubnet
@@ -165,21 +158,6 @@ Resources:
           sudo systemctl enable docker
           sudo usermod -aG docker $USER
 
-  # Test Instance (no Docker)
-  TestInstance:
-    Type: AWS::EC2::Instance
-    Properties:
-      AvailabilityZone: ap-southeast-3a
-      KeyName: sample-key-pair-firman
-      ImageId: ami-01d23da707abb0f2f
-      InstanceType: t3.micro
-      SecurityGroupIds:
-        - !Ref MySecurityGroup
-      SubnetId: !Ref MySubnet
-      Tags:
-        - Key: Name
-          Value: Test
-
 Outputs:
   JenkinsPublicIP:
     Description: "Public IP of Jenkins Instance"
@@ -193,6 +171,3 @@ Outputs:
     Description: "Public IP of Grafana Instance"
     Value: !GetAtt GrafanaInstance.PublicIp
 
-  TestPublicIP:
-    Description: "Public IP of Test Instance"
-    Value: !GetAtt TestInstance.PublicIp
