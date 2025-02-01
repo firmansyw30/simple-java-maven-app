@@ -31,6 +31,10 @@ node {
             }
         }
 
+        stage('Set Permissions') {
+            sh 'chmod +x ./jenkins/scripts/*.sh'
+        }
+
         stage('Deploy') {
             sh './jenkins/scripts/deploy.sh'
             echo 'Menunggu 1 menit sebelum pipeline berakhir...'
